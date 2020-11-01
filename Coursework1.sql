@@ -33,8 +33,7 @@ GROUP BY E.student) AS SG
 WHERE SG.avg >= 75;
 
 /* Question 4: Students who failed more than 30% of their exams.
-Return the UUN of each student that satisfies this requirement, without repetitions. An exam is failed
-when the grade is below 40.
+Return the UUN of each student that satisfies this requirement, without repetitions. An exam is failed when the grade is below 40.
 The output table will have a single column, which consists of distinct UUNs. */
 
 /* Failing marks per student */
@@ -60,3 +59,23 @@ FROM Exams E
 GROUP BY E.student) AS Total 
 ON Fail.student = Total.student
 WHERE CAST(Fail.fail_count AS float) / CAST (Total.total_count AS float) > 0.3;
+
+/* Question 5: Total number of credits in the programme of each degree.
+For each degree, calculate the total number of credits of the courses listed in its programme. 
+Return the code of the degree and the corresponding total (in this order). Degrees
+with no mandatory courses will be in the output with a total of 0.
+The output table will have two columns: the first one consists of degree codes, the second consists of non-negative integers. The number of rows is always the same as the number of rows in the Degrees table.
+*/
+
+/* Courses and credits for each degree */
+SELECT P.degree, P.course, C.credits
+FROM Programmes P 
+JOIN Courses C ON P.course = C.code;
+
+/* Sum of credits from courses for each degree */
+SELECT DC.degree, SUM(DC.credits) 
+FROM (SELECT P.degree, P.course, C.credits
+        FROM Programmes P 
+        JOIN Courses C ON P.course = C.code
+    ) AS DC
+GROUP BY DC.degree;
