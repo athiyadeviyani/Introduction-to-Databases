@@ -2,7 +2,6 @@
 Return the UUN of each student that satisifes this requirement, without repetitions.
 The output table will have a single column, which consists of distinct UUNs.
 */
-
 SELECT S.uun FROM students S
 WHERE S.uun NOT IN (
     SELECT E.student
@@ -22,10 +21,6 @@ appear more than once in the output. Students without exams do not appear in the
 The output table will have four columns: the first one consists of distinct UUNs, the second and third
 consist of marks (non-negative integers up to 100), and the fourth is the number of exams (a positive
 integer). */
-SELECT E.student, AVG(E.grade), MAX(E.grade), MIN(E.grade), COUNT(E.grade)
-FROM Exams E
-GROUP BY E.student;
-
 SELECT SG.student, SG.min, SG.max, SG.count
 From (SELECT E.student, AVG(E.grade), MAX(E.grade), MIN(E.grade), COUNT(E.grade)
 FROM Exams E
@@ -47,11 +42,11 @@ SELECT E.student, COUNT(E.grade)
 FROM Exams E 
 GROUP BY E.student;
 
-/* Combine the two counts */
-SELECT Fail.student, Fail.fail_count, Total.total_count
+/* Combine the two counts: Fail.fail_count, Total.total_count */
+SELECT Fail.student
 FROM (SELECT E.student, COUNT(E.grade) AS fail_count 
 FROM Exams E 
-WHERE E.grade <= 40
+WHERE E.grade < 40
 GROUP BY E.student) AS Fail 
 JOIN
 (SELECT E.student, COUNT(E.grade) AS total_count 
@@ -79,3 +74,62 @@ FROM (SELECT P.degree, P.course, C.credits
         JOIN Courses C ON P.course = C.code
     ) AS DC
 GROUP BY DC.degree;
+
+/* Question 6: Number of A, B, C and D exam grades of each student.
+Return the student’s UUN, followed by columns A, B, C, D (in this order) with the total number of
+exam grades in each of the following categories:
+• A is a grade of 80 or above,
+• B is a grade between 60 and 79,
+• C is a grade between 40 and 59,
+• D is a grade below 40.
+For each row, A + B + C + D = total number of exams taken by the student. Students without exams
+do not appear in the output.
+The number of rows will always be the same as the number of distinct UUNs in the first column of the
+Exams table. */
+
+/* Displays student letter grades */
+SELECT S.uun, 
+    (case when E.grade >= 80 then 'A'
+          when E.grade >= 60 then 'B'
+          when E.grade >= 40 then 'C'
+          else 'D'
+          end) as LetterGrade
+FROM Students S
+JOIN Exams E ON S.uun = E.student;
+
+/* Display counts of each letter grade for each student */
+SELECT S.uun, 
+    COALESCE(SUM(A.count), 0) as A,
+    COALESCE(SUM(B.count), 0) as B, 
+    COALESCE(SUM(C.count), 0) as C, 
+    COALESCE(SUM(D.count), 0) as D
+FROM Students S 
+    LEFT JOIN (
+        SELECT S.uun, COUNT(E.grade)
+        FROM Students S
+        JOIN Exams E ON S.uun = E.student
+        WHERE E.grade >= 80
+        GROUP BY S.uun
+    ) AS A ON S.uun = A.uun
+    LEFT JOIN (
+        SELECT S.uun, COUNT(S.uun)
+        FROM Students S
+        JOIN Exams E ON S.uun = E.student
+        WHERE E.grade <= 79 AND E.grade >= 60
+        GROUP BY S.uun
+    ) AS B ON S.uun = B.uun
+    LEFT JOIN (
+        SELECT S.uun, COUNT(S.uun)
+        FROM Students S
+        JOIN Exams E ON S.uun = E.student
+        WHERE E.grade <= 59 AND E.grade >= 40
+        GROUP BY S.uun
+    ) AS C ON S.uun = C.uun
+    LEFT JOIN (
+        SELECT S.uun, COUNT(S.uun)
+        FROM Students S
+        JOIN Exams E ON S.uun = E.student
+        WHERE E.grade < 40
+        GROUP BY S.uun
+    ) AS D ON S.uun = D.uun
+GROUP BY S.uun;
