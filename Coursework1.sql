@@ -2,6 +2,7 @@
 Return the UUN of each student that satisifes this requirement, without repetitions.
 The output table will have a single column, which consists of distinct UUNs.
 */
+
 SELECT S.uun FROM students S
 WHERE S.uun NOT IN (
     SELECT E.student
@@ -12,6 +13,7 @@ WHERE S.uun NOT IN (
 The output table will have a single column, consisting of non-negative integers, and precisely one row, independently of the instance. 
 If there are no postgraduate students, the only answer will be the value 0.
 */
+
 SELECT Count(D.code)
 FROM Degrees D
 WHERE D.type = 'PG';
@@ -21,7 +23,9 @@ For each student that satisfies this requirement, return their UUN, their minimu
 The same UUN cannot appear more than once in the output. Students without exams do not appear in the output.
 The output table will have four columns: the first one consists of distinct UUNs, 
     the second and third consist of marks (non-negative integers up to 100), 
-    and the fourth is the number of exams (a positive integer). */
+    and the fourth is the number of exams (a positive integer). 
+*/
+
 SELECT SG.student, SG.min, SG.max, SG.count
 From (SELECT E.student, AVG(E.grade), MAX(E.grade), MIN(E.grade), COUNT(E.grade)
 FROM Exams E
@@ -30,7 +34,8 @@ WHERE SG.avg >= 75;
 
 /* Question 4: Students who failed more than 30% of their exams.
 Return the UUN of each student that satisfies this requirement, without repetitions. An exam is failed when the grade is below 40.
-The output table will have a single column, which consists of distinct UUNs. */
+The output table will have a single column, which consists of distinct UUNs. 
+*/
 
 /* Failing marks per student */
 SELECT E.student, COUNT(E.grade) 
@@ -85,7 +90,8 @@ each of the following categories:
     • C is a grade between 40 and 59,
     • D is a grade below 40.
 For each row, A + B + C + D = total number of exams taken by the student. Students without exams do not appear in the output.
-The number of rows will always be the same as the number of distinct UUNs in the first column of the Exams table. */
+The number of rows will always be the same as the number of distinct UUNs in the first column of the Exams table. 
+*/
 
 /* Displays student letter grades */
 SELECT S.uun, 
@@ -99,7 +105,7 @@ JOIN Exams E ON S.uun = E.student;
 
 /* Display counts of each letter grade for each student */
 SELECT S.uun, 
-    COALESCE(SUM(A.count), 0) as A,
+    COALESCE(SUM(A.count), 0) as A,  /* Without COALESCE, SUM(x) returns null */
     COALESCE(SUM(B.count), 0) as B, 
     COALESCE(SUM(C.count), 0) as C, 
     COALESCE(SUM(D.count), 0) as D
@@ -134,7 +140,7 @@ FROM Students S
     ) AS D ON S.uun = D.uun
 GROUP BY S.uun;
 
-/* Question 7:  Courses that are part of an undergraduate and a postgraduate degree programme.
+/* Question 7: Courses that are part of an undergraduate and a postgraduate degree programme.
 That is, courses that are in the programme of some undergraduate degree and also in the programme of some postgraduate degree. 
 Return the code of each course that satisfies these requirements, without repetitions.
 The output table will have one column, which consists of distinct course codes.
@@ -167,3 +173,85 @@ INNER JOIN (
     WHERE D.type = 'PG'
 ) AS PG 
 ON UG.course = PG.course;
+
+/* Question 8: Courses included in one and only one postgraduate degree programme.
+That is, courses that are in the programme of some postgraduate degree and not in the programme of any other postgraduate degree. Return the code of each course that satisfies this requirement, without repetitions.
+The output table will have one column, which consists of distinct course codes.
+*/
+
+/* PG courses count */
+SELECT P.course, COUNT(P.course)
+FROM Programmes P 
+JOIN Degrees D ON P.degree = D.code 
+WHERE D.type = 'PG'
+GROUP BY P.course;
+
+/* Courses in only one PG programme */
+SELECT PCount.course
+FROM (
+    SELECT P.course, COUNT(P.course)
+    FROM Programmes P 
+    JOIN Degrees D ON P.degree = D.code 
+    WHERE D.type = 'PG'
+    GROUP BY P.course
+) AS PCount
+WHERE PCount.count = 1;
+
+/* Question 9: Students who took more than one exam on the date of their most recent exam.
+For each student, return their UUN and the date of their most recent exam, if on that same date they have taken at least another (different) exam.
+The output table will have two columns: the first consists of distinct UUNs, the second of dates.
+*/
+
+/* Most recent exam date per student */
+SELECT E.student, MAX(E.date)
+FROM Exams E 
+GROUP BY E.student;
+
+/* Number of exams on the most recent exam date per student */
+SELECT E.student, Recent.max, COUNT(E.student)
+FROM Exams E 
+LEFT JOIN (
+    SELECT E.student, MAX(E.date)
+    FROM Exams E 
+    GROUP BY E.student
+) AS Recent 
+ON Recent.student = E.student
+WHERE Recent.max = E.date
+GROUP BY E.student, Recent.max
+
+/* Students who took more than one exam on most recent exam date */
+SELECT ExamCounts.student, ExamCounts.max as date
+FROM (SELECT E.student, Recent.max, COUNT(E.student)
+    FROM Exams E 
+    LEFT JOIN (
+        SELECT E.student, MAX(E.date)
+        FROM Exams E 
+        GROUP BY E.student
+    ) AS Recent 
+    ON Recent.student = E.student
+    WHERE Recent.max = E.date
+    GROUP BY E.student, Recent.max) AS ExamCounts 
+WHERE ExamCounts.count > 1;
+
+/* Question 10: Students who have taken the exam for every course in their degree programme.
+For each student that satisfies this requirement, return their UUN and their name (in this order). Students in degrees without mandatory courses (listed in the Programmes table satisfy the requirement and must appear in the output.
+The output table will have two columns: the first one consists of UUNs, the second consists of student names. There are no duplicate rows. 
+*/
+
+/* Students who have NOT taken the exam for every course in their degree programme */
+SELECT DISTINCT(S.uun)
+FROM Programmes P 
+    INNER JOIN Students S ON S.degree = P.degree 
+    LEFT OUTER JOIN Exams E ON E.course = P.course AND E.student = S.uun
+WHERE E.course IS NULL;
+
+/* Students that are not included in the query above */
+SELECT S.uun, S.name 
+FROM Students S 
+WHERE S.uun NOT IN (
+    SELECT DISTINCT(S.uun)
+    FROM Programmes P 
+        INNER JOIN Students S ON S.degree = P.degree 
+        LEFT OUTER JOIN Exams E ON E.course = P.course AND E.student = S.uun
+    WHERE E.course IS NULL
+);
