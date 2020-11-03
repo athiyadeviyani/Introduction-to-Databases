@@ -1,135 +1,79 @@
-/* Question 1: Students who have not taken any exams. 
-Return the UUN of each student that satisifes this requirement, without repetitions.
-The output table will have a single column, which consists of distinct UUNs.
-*/
-SELECT S.uun FROM students S
-WHERE S.uun NOT IN (
-    SELECT E.student
-    FROM Exams E
+/* Question 1: Invoices issued after their due date. Return all attributes */
+SELECT * FROM Invoices I WHERE I.issued > I.due;
+
+/* Question 2: Invoices that were issued before the date in which the order they refer to was placed. Return the ID of the invoice, the date it was issued, the ID of the order associated with it and the date the order was placed. */
+SELECT I.invid, I.issued, O.ordid, O.odate 
+FROM Invoices I 
+JOIN Orders O ON I.ordid = O.ordid 
+WHERE I.issued < O.odate;
+
+/* Question 3: Orders that do not have a detail and were placed before 6 September 2016. Return all attributes. */
+SELECT * 
+FROM Orders O 
+WHERE (O.ordid NOT IN (
+    SELECT D.ordid from Details D)
+    ) AND O.odate < '2016-09-06';
+
+/* Question 4: Customers who have not placed any orders in 2016. Return all attributes. */
+SELECT * 
+FROM Customers C 
+WHERE C.custid NOT IN (
+    SELECT O.ocust FROM Orders O
 );
 
-/* Question 2: Total number of postgraduate students.
-The output table will have a single column, consisting of non-negative integers, and precisely one row, independently of the instance. If there are no postgraduate students, the only answer will be the value 0.
-*/
-SELECT Count(D.code)
-FROM Degrees D
-WHERE D.type = 'PG';
+/* Question 5: ) ID and name of customers and the date of their last order. For customers who did not place any orders, no rows must be returned. For each customer who placed more than one order on the date of their most recent order, only one row must be returned. */
+SELECT C.custid, C.cname, MAX(O.odate)
+FROM Customers C
+JOIN Orders O ON C.custid = O.ocust
+GROUP BY C.custid;
 
-/* Question 3: Students whose average grade is greater than or equal to 75.
-For each student that satisfies this requirement, return their UUN, their minimum grade, their maximum grade, and the total number of exams the student took (in this order). The same UUN cannot
-appear more than once in the output. Students without exams do not appear in the output.
-The output table will have four columns: the first one consists of distinct UUNs, the second and third
-consist of marks (non-negative integers up to 100), and the fourth is the number of exams (a positive
-integer). */
-SELECT SG.student, SG.min, SG.max, SG.count
-From (SELECT E.student, AVG(E.grade), MAX(E.grade), MIN(E.grade), COUNT(E.grade)
-FROM Exams E
-GROUP BY E.student) AS SG
-WHERE SG.avg >= 75;
+/* Question 6: Invoices that have been overpaid. Observe that there may be more than one payment referring to the
+same invoice. Return the invoice number and the amount that should be reimbursed. */
+SELECT I.invid, (P.amount - I.amount) AS reimbursement
+FROM Invoices I 
+JOIN Payments P 
+ON I.invid = P.invid
+WHERE P.amount > I.amount;
 
-/* Question 4: Students who failed more than 30% of their exams.
-Return the UUN of each student that satisfies this requirement, without repetitions. An exam is failed when the grade is below 40.
-The output table will have a single column, which consists of distinct UUNs. */
+/* Question 7: Products that were ordered more than 10 times in total, by taking into account the quantities in which
+they appear in the order details. Return the product code and the total number of times it was ordered. */
+SELECT Counts.pcode, Counts.sum
+FROM (SELECT D.pcode, SUM(D.qty)
+        FROM Details D
+        GROUP BY D.pcode) AS Counts
+WHERE Counts.sum > 10;
 
-/* Failing marks per student */
-SELECT E.student, COUNT(E.grade) 
-FROM Exams E 
-WHERE E.grade <= 40
-GROUP BY E.student;
+/* Question 8: Products that are usually ordered in bulk: whenever one of these products is ordered, it is ordered in
+a quantity that on average is equal to or greater than 8. For each such product, return product code
+and price */
+SELECT P.pcode, P.price
+FROM Products P 
+JOIN (SELECT D.pcode, AVG(D.qty)
+        FROM Details D
+        GROUP BY D.pcode) AS Averages 
+ON P.pcode = Averages.pcode
+WHERE Averages.avg >= 8;
 
-/* Total exams per student */
-SELECT E.student, COUNT(E.grade) 
-FROM Exams E 
-GROUP BY E.student;
+/* Question 9: Total number of orders placed in 2016 by customers of each country. If all customers from a specific
+country did not place any orders in 2016, the country will not appear in the output. */
+SELECT C.country, COUNT(C.country)
+FROM Customers C
+JOIN Orders O
+ON O.ocust = C.custid
+WHERE O.odate <= '2016-12-31' AND O.odate >= '2016-01-01'
+GROUP BY C.country;
 
-/* Combine the two counts: Fail.fail_count, Total.total_count */
-SELECT Fail.student
-FROM (SELECT E.student, COUNT(E.grade) AS fail_count 
-FROM Exams E 
-WHERE E.grade < 40
-GROUP BY E.student) AS Fail 
-JOIN
-(SELECT E.student, COUNT(E.grade) AS total_count 
-FROM Exams E 
-GROUP BY E.student) AS Total 
-ON Fail.student = Total.student
-WHERE CAST(Fail.fail_count AS float) / CAST (Total.total_count AS float) > 0.3;
-
-/* Question 5: Total number of credits in the programme of each degree.
-For each degree, calculate the total number of credits of the courses listed in its programme. 
-Return the code of the degree and the corresponding total (in this order). Degrees
-with no mandatory courses will be in the output with a total of 0.
-The output table will have two columns: the first one consists of degree codes, the second consists of non-negative integers. The number of rows is always the same as the number of rows in the Degrees table.
-*/
-
-/* Courses and credits for each degree */
-SELECT P.degree, P.course, C.credits
-FROM Programmes P 
-JOIN Courses C ON P.course = C.code;
-
-/* Sum of credits from courses for each degree */
-SELECT DC.degree, SUM(DC.credits) 
-FROM (SELECT P.degree, P.course, C.credits
-        FROM Programmes P 
-        JOIN Courses C ON P.course = C.code
-    ) AS DC
-GROUP BY DC.degree;
-
-/* Question 6: Number of A, B, C and D exam grades of each student.
-Return the student’s UUN, followed by columns A, B, C, D (in this order) with the total number of
-exam grades in each of the following categories:
-• A is a grade of 80 or above,
-• B is a grade between 60 and 79,
-• C is a grade between 40 and 59,
-• D is a grade below 40.
-For each row, A + B + C + D = total number of exams taken by the student. Students without exams
-do not appear in the output.
-The number of rows will always be the same as the number of distinct UUNs in the first column of the
-Exams table. */
-
-/* Displays student letter grades */
-SELECT S.uun, 
-    (case when E.grade >= 80 then 'A'
-          when E.grade >= 60 then 'B'
-          when E.grade >= 40 then 'C'
-          else 'D'
-          end) as LetterGrade
-FROM Students S
-JOIN Exams E ON S.uun = E.student;
-
-/* Display counts of each letter grade for each student */
-SELECT S.uun, 
-    COALESCE(SUM(A.count), 0) as A,
-    COALESCE(SUM(B.count), 0) as B, 
-    COALESCE(SUM(C.count), 0) as C, 
-    COALESCE(SUM(D.count), 0) as D
-FROM Students S 
-    LEFT JOIN (
-        SELECT S.uun, COUNT(E.grade)
-        FROM Students S
-        JOIN Exams E ON S.uun = E.student
-        WHERE E.grade >= 80
-        GROUP BY S.uun
-    ) AS A ON S.uun = A.uun
-    LEFT JOIN (
-        SELECT S.uun, COUNT(S.uun)
-        FROM Students S
-        JOIN Exams E ON S.uun = E.student
-        WHERE E.grade <= 79 AND E.grade >= 60
-        GROUP BY S.uun
-    ) AS B ON S.uun = B.uun
-    LEFT JOIN (
-        SELECT S.uun, COUNT(S.uun)
-        FROM Students S
-        JOIN Exams E ON S.uun = E.student
-        WHERE E.grade <= 59 AND E.grade >= 40
-        GROUP BY S.uun
-    ) AS C ON S.uun = C.uun
-    LEFT JOIN (
-        SELECT S.uun, COUNT(S.uun)
-        FROM Students S
-        JOIN Exams E ON S.uun = E.student
-        WHERE E.grade < 40
-        GROUP BY S.uun
-    ) AS D ON S.uun = D.uun
-GROUP BY S.uun;
+/* Question 10: For each order without invoice, list its ID, the date it was placed and the total price of the products in
+its detail, taking into account the quantity of each ordered product and its unit price. Orders without
+detail must not be included in the answers. */
+SELECT OrdersAndTotals.ordid, OrdersAndTotals.odate, OrdersAndTotals.total
+FROM (
+    SELECT O.ordid, O.odate, Totals.total
+    FROM Orders O
+    JOIN (
+        SELECT D.ordid, D.pcode, D.qty * P.price AS total
+        FROM Details D
+        JOIN Products P on P.pcode = D.pcode) AS Totals
+    ON Totals.ordid = O.ordid) AS OrdersAndTotals
+WHERE OrdersAndTotals.ordid NOT IN (
+    Select I.ordid FROM Invoices I);
