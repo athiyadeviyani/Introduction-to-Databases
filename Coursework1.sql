@@ -9,18 +9,19 @@ WHERE S.uun NOT IN (
 );
 
 /* Question 2: Total number of postgraduate students.
-The output table will have a single column, consisting of non-negative integers, and precisely one row, independently of the instance. If there are no postgraduate students, the only answer will be the value 0.
+The output table will have a single column, consisting of non-negative integers, and precisely one row, independently of the instance. 
+If there are no postgraduate students, the only answer will be the value 0.
 */
 SELECT Count(D.code)
 FROM Degrees D
 WHERE D.type = 'PG';
 
 /* Question 3: Students whose average grade is greater than or equal to 75.
-For each student that satisfies this requirement, return their UUN, their minimum grade, their maximum grade, and the total number of exams the student took (in this order). The same UUN cannot
-appear more than once in the output. Students without exams do not appear in the output.
-The output table will have four columns: the first one consists of distinct UUNs, the second and third
-consist of marks (non-negative integers up to 100), and the fourth is the number of exams (a positive
-integer). */
+For each student that satisfies this requirement, return their UUN, their minimum grade, their maximum grade, and the total number of exams the student took (in this order). 
+The same UUN cannot appear more than once in the output. Students without exams do not appear in the output.
+The output table will have four columns: the first one consists of distinct UUNs, 
+    the second and third consist of marks (non-negative integers up to 100), 
+    and the fourth is the number of exams (a positive integer). */
 SELECT SG.student, SG.min, SG.max, SG.count
 From (SELECT E.student, AVG(E.grade), MAX(E.grade), MIN(E.grade), COUNT(E.grade)
 FROM Exams E
@@ -57,9 +58,10 @@ WHERE CAST(Fail.fail_count AS float) / CAST (Total.total_count AS float) > 0.3;
 
 /* Question 5: Total number of credits in the programme of each degree.
 For each degree, calculate the total number of credits of the courses listed in its programme. 
-Return the code of the degree and the corresponding total (in this order). Degrees
-with no mandatory courses will be in the output with a total of 0.
-The output table will have two columns: the first one consists of degree codes, the second consists of non-negative integers. The number of rows is always the same as the number of rows in the Degrees table.
+Return the code of the degree and the corresponding total (in this order). 
+Degrees with no mandatory courses will be in the output with a total of 0.
+The output table will have two columns: the first one consists of degree codes, the second consists of non-negative integers. 
+The number of rows is always the same as the number of rows in the Degrees table.
 */
 
 /* Courses and credits for each degree */
@@ -76,16 +78,14 @@ FROM (SELECT P.degree, P.course, C.credits
 GROUP BY DC.degree;
 
 /* Question 6: Number of A, B, C and D exam grades of each student.
-Return the student’s UUN, followed by columns A, B, C, D (in this order) with the total number of
-exam grades in each of the following categories:
-• A is a grade of 80 or above,
-• B is a grade between 60 and 79,
-• C is a grade between 40 and 59,
-• D is a grade below 40.
-For each row, A + B + C + D = total number of exams taken by the student. Students without exams
-do not appear in the output.
-The number of rows will always be the same as the number of distinct UUNs in the first column of the
-Exams table. */
+Return the student’s UUN, followed by columns A, B, C, D (in this order) with the total number of exam grades in 
+each of the following categories:
+    • A is a grade of 80 or above,
+    • B is a grade between 60 and 79,
+    • C is a grade between 40 and 59,
+    • D is a grade below 40.
+For each row, A + B + C + D = total number of exams taken by the student. Students without exams do not appear in the output.
+The number of rows will always be the same as the number of distinct UUNs in the first column of the Exams table. */
 
 /* Displays student letter grades */
 SELECT S.uun, 
@@ -133,3 +133,37 @@ FROM Students S
         GROUP BY S.uun
     ) AS D ON S.uun = D.uun
 GROUP BY S.uun;
+
+/* Question 7:  Courses that are part of an undergraduate and a postgraduate degree programme.
+That is, courses that are in the programme of some undergraduate degree and also in the programme of some postgraduate degree. 
+Return the code of each course that satisfies these requirements, without repetitions.
+The output table will have one column, which consists of distinct course codes.
+*/
+
+/* UG courses */
+SELECT P.course
+FROM Programmes P 
+JOIN Degrees D ON P.degree = D.code 
+WHERE D.type = 'UG';
+
+/* PG courses */
+SELECT P.course
+FROM Programmes P 
+JOIN Degrees D ON P.degree = D.code 
+WHERE D.type = 'PG';
+
+/* UG and PG courses */
+SELECT DISTINCT(UG.course)
+FROM (
+    SELECT P.course
+    FROM Programmes P 
+    JOIN Degrees D ON P.degree = D.code 
+    WHERE D.type = 'UG'
+) AS UG 
+INNER JOIN (
+    SELECT P.course
+    FROM Programmes P 
+    JOIN Degrees D ON P.degree = D.code 
+    WHERE D.type = 'PG'
+) AS PG 
+ON UG.course = PG.course;
