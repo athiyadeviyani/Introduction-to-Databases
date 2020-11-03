@@ -1,2 +1,2 @@
 # Introduction-to-Databases
-SQL data for Q1: https://github.com/JorVLP/idb-sql-data
+SQL data for CW1: https://github.com/JorVLP/idb-sql-data
