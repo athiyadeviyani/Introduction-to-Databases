@@ -14,8 +14,8 @@ The output table will have a single column, consisting of non-negative integers,
 If there are no postgraduate students, the only answer will be the value 0.
 */
 
-SELECT Count(D.code)
-FROM Degrees D
+SELECT COUNT(D.code)
+FROM DEGREES D
 WHERE D.type = 'PG';
 
 /* Question 3: Students whose average grade is greater than or equal to 75.
@@ -107,6 +107,25 @@ SELECT S.uun,
 FROM Students S
 JOIN Exams E ON S.uun = E.student;
 
+/* Using CASE statement */
+SELECT SLG.uun,
+    COUNT(CASE WHEN SLG.lettergrade = 'A' THEN 1 END) AS A,
+    COUNT(CASE WHEN SLG.lettergrade = 'B' THEN 1 END) AS B,
+    COUNT(CASE WHEN SLG.lettergrade = 'C' THEN 1 END) AS C,
+    COUNT(CASE WHEN SLG.lettergrade = 'D' THEN 1 END) AS D
+FROM (
+    SELECT S.uun, 
+    (
+        CASE WHEN E.grade >= 80 THEN 'A'
+        WHEN E.grade >= 60 THEN 'B'
+        WHEN E.grade >= 40 THEN 'C'
+        ELSE 'D'
+        END
+    ) AS LetterGrade
+FROM Students S
+JOIN Exams E ON S.uun = E.student) AS SLG
+GROUP BY SLG.uun;
+
 /* Display counts of each letter grade for each student */
 SELECT S.uun, 
     COALESCE(SUM(A.count), 0) as A,  /* Without COALESCE, SUM(x) returns null */
@@ -119,29 +138,25 @@ FROM Students S
         FROM Students S
         JOIN Exams E ON S.uun = E.student
         WHERE E.grade >= 80
-        GROUP BY S.uun
-    ) AS A ON S.uun = A.uun
+        GROUP BY S.uun) AS A ON S.uun = A.uun
     LEFT JOIN (
         SELECT S.uun, COUNT(S.uun)
         FROM Students S
         JOIN Exams E ON S.uun = E.student
         WHERE E.grade <= 79 AND E.grade >= 60
-        GROUP BY S.uun
-    ) AS B ON S.uun = B.uun
+        GROUP BY S.uun) AS B ON S.uun = B.uun
     LEFT JOIN (
         SELECT S.uun, COUNT(S.uun)
         FROM Students S
         JOIN Exams E ON S.uun = E.student
         WHERE E.grade <= 59 AND E.grade >= 40
-        GROUP BY S.uun
-    ) AS C ON S.uun = C.uun
+        GROUP BY S.uun) AS C ON S.uun = C.uun
     LEFT JOIN (
         SELECT S.uun, COUNT(S.uun)
         FROM Students S
         JOIN Exams E ON S.uun = E.student
         WHERE E.grade < 40
-        GROUP BY S.uun
-    ) AS D ON S.uun = D.uun
+        GROUP BY S.uun) AS D ON S.uun = D.uun
 GROUP BY S.uun;
 
 /* Question 7: Courses that are part of an undergraduate and a postgraduate degree programme.
@@ -168,14 +183,12 @@ FROM (
     SELECT P.course
     FROM Programmes P 
     JOIN Degrees D ON P.degree = D.code 
-    WHERE D.type = 'UG'
-) AS UG 
+    WHERE D.type = 'UG') AS UG 
 INNER JOIN (
     SELECT P.course
     FROM Programmes P 
     JOIN Degrees D ON P.degree = D.code 
-    WHERE D.type = 'PG'
-) AS PG 
+    WHERE D.type = 'PG') AS PG 
 ON UG.course = PG.course;
 
 /* Question 8: Courses included in one and only one postgraduate degree programme.
@@ -197,8 +210,7 @@ FROM (
     FROM Programmes P 
     JOIN Degrees D ON P.degree = D.code 
     WHERE D.type = 'PG'
-    GROUP BY P.course
-) AS PCount
+    GROUP BY P.course) AS PCount
 WHERE PCount.count = 1;
 
 /* Question 9: Students who took more than one exam on the date of their most recent exam.
@@ -217,8 +229,7 @@ FROM Exams E
 LEFT JOIN (
     SELECT E.student, MAX(E.date)
     FROM Exams E 
-    GROUP BY E.student
-) AS Recent 
+    GROUP BY E.student) AS Recent 
 ON Recent.student = E.student
 WHERE Recent.max = E.date
 GROUP BY E.student, Recent.max
@@ -230,8 +241,7 @@ FROM (SELECT E.student, Recent.max, COUNT(E.student)
     LEFT JOIN (
         SELECT E.student, MAX(E.date)
         FROM Exams E 
-        GROUP BY E.student
-    ) AS Recent 
+        GROUP BY E.student) AS Recent 
     ON Recent.student = E.student
     WHERE Recent.max = E.date
     GROUP BY E.student, Recent.max) AS ExamCounts 
