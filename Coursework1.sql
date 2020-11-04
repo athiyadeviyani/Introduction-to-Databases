@@ -229,20 +229,14 @@ For each student that satisfies this requirement, return their UUN and their nam
 The output table will have two columns: the first one consists of UUNs, the second consists of student names. There are no duplicate rows. 
 */
 
-/* Students who have NOT taken the exam for every course in their degree programme */
-SELECT DISTINCT(S.uun)
-FROM Programmes P 
-    INNER JOIN Students S ON S.degree = P.degree 
-    LEFT OUTER JOIN Exams E ON E.course = P.course AND E.student = S.uun
-WHERE E.course IS NULL;
-
 /* Students that are not included in the query above */
 SELECT S.uun, S.name 
 FROM Students S 
-WHERE S.uun NOT IN (
-    SELECT DISTINCT(S.uun)
-    FROM Programmes P 
-        INNER JOIN Students S ON S.degree = P.degree 
-        LEFT OUTER JOIN Exams E ON E.course = P.course AND E.student = S.uun
-    WHERE E.course IS NULL
+JOIN Programmes P ON P.degree = S.degree 
+JOIN Exams E ON E.student = S.uun AND E.course = P.course 
+GROUP BY S.uun, S.name, P.degree
+HAVING COUNT(DISTINCT E.course) = (
+    SELECT COUNT(*)
+    FROM Programmes P2 
+    WHERE P2.degree = P.degree
 );
