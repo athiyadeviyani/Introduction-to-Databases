@@ -136,39 +136,6 @@ FROM Students S
 JOIN Exams E ON S.uun = E.student
 GROUP BY S.uun;
 
-/* Display counts of each letter grade for each student */
-SELECT S.uun, 
-    COALESCE(SUM(A.count), 0) as A,  /* Without COALESCE, SUM(x) returns null */
-    COALESCE(SUM(B.count), 0) as B, 
-    COALESCE(SUM(C.count), 0) as C, 
-    COALESCE(SUM(D.count), 0) as D
-FROM Students S 
-    LEFT JOIN (
-        SELECT S.uun, COUNT(E.grade)
-        FROM Students S
-        JOIN Exams E ON S.uun = E.student
-        WHERE E.grade >= 80
-        GROUP BY S.uun) AS A ON S.uun = A.uun
-    LEFT JOIN (
-        SELECT S.uun, COUNT(S.uun)
-        FROM Students S
-        JOIN Exams E ON S.uun = E.student
-        WHERE E.grade <= 79 AND E.grade >= 60
-        GROUP BY S.uun) AS B ON S.uun = B.uun
-    LEFT JOIN (
-        SELECT S.uun, COUNT(S.uun)
-        FROM Students S
-        JOIN Exams E ON S.uun = E.student
-        WHERE E.grade <= 59 AND E.grade >= 40
-        GROUP BY S.uun) AS C ON S.uun = C.uun
-    LEFT JOIN (
-        SELECT S.uun, COUNT(S.uun)
-        FROM Students S
-        JOIN Exams E ON S.uun = E.student
-        WHERE E.grade < 40
-        GROUP BY S.uun) AS D ON S.uun = D.uun
-GROUP BY S.uun;
-
 /* Question 7: Courses that are part of an undergraduate and a postgraduate degree programme.
 That is, courses that are in the programme of some undergraduate degree and also in the programme of some postgraduate degree. 
 Return the code of each course that satisfies these requirements, without repetitions.
@@ -236,7 +203,7 @@ GROUP BY E.student;
 /* Number of exams on the most recent exam date per student */
 SELECT E.student, Recent.max, COUNT(E.student)
 FROM Exams E 
-LEFT JOIN (
+JOIN (
     SELECT E.student, MAX(E.date)
     FROM Exams E 
     GROUP BY E.student) AS Recent 
@@ -248,7 +215,7 @@ GROUP BY E.student, Recent.max
 SELECT ExamCounts.student, ExamCounts.max as date
 FROM (SELECT E.student, Recent.max, COUNT(E.student)
     FROM Exams E 
-    LEFT JOIN (
+    JOIN (
         SELECT E.student, MAX(E.date)
         FROM Exams E 
         GROUP BY E.student) AS Recent 
