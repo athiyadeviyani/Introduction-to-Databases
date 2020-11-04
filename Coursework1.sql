@@ -229,7 +229,6 @@ For each student that satisfies this requirement, return their UUN and their nam
 The output table will have two columns: the first one consists of UUNs, the second consists of student names. There are no duplicate rows. 
 */
 
-/* Students that are not included in the query above */
 SELECT S.uun, S.name 
 FROM Students S 
 JOIN Programmes P ON P.degree = S.degree 
