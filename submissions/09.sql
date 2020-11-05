@@ -1,4 +1,4 @@
-SELECT ExamCounts.student, ExamCounts.max as date
+SELECT ExamCounts.student, ExamCounts.max as exam_date
 FROM (SELECT E.student, Recent.max, COUNT(E.student)
     FROM Exams E 
     JOIN (
