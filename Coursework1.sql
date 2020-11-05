@@ -62,7 +62,7 @@ JOIN (
     FROM Exams E 
     GROUP BY E.student) AS Total 
 ON Fail.student = Total.student
-WHERE CAST(Fail.fail_count AS float) / CAST (Total.total_count AS float) > 0.3;
+WHERE CAST(Fail.fail_count AS DECIMAL) / CAST (Total.total_count AS DECIMAL) > 0.3;
 
 /* Question 5: Total number of credits in the programme of each degree.
 For each degree, calculate the total number of credits of the courses listed in its programme. 
