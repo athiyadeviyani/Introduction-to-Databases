@@ -14,8 +14,9 @@ The output table will have a single column, consisting of non-negative integers,
 If there are no postgraduate students, the only answer will be the value 0.
 */
 
-SELECT COUNT(D.code)
-FROM DEGREES D
+SELECT COUNT(D.type)
+FROM Students S
+JOIN Degrees D ON S.degree = D.code
 WHERE D.type = 'PG';
 
 /* Question 3: Students whose average grade is greater than or equal to 75.
@@ -82,7 +83,14 @@ FROM (
     SELECT P.degree, P.course, C.credits
     FROM Programmes P 
     JOIN Courses C ON P.course = C.code) AS DC
-GROUP BY DC.degree;
+GROUP BY DC.degree
+UNION
+SELECT D.code, 0
+FROM Degrees D 
+WHERE D.code NOT IN (
+    SELECT P.degree
+    FROM Programmes P
+);
 
 /* Question 6: Number of A, B, C and D exam grades of each student.
 Return the student’s UUN, followed by columns A, B, C, D (in this order) with the total number of exam grades in 
@@ -130,7 +138,7 @@ GROUP BY SLG.uun;
 SELECT S.uun,
     COUNT(CASE WHEN (E.grade >= 80) THEN 1 END) AS A,
     COUNT(CASE WHEN (E.grade >= 60 AND E.grade <= 79) THEN 1 END) AS B,
-    COUNT(CASE WHEN (E.grade >= 50 AND E.grade <= 59)  THEN 1 END) AS C,
+    COUNT(CASE WHEN (E.grade >= 40 AND E.grade <= 59)  THEN 1 END) AS C,
     COUNT(CASE WHEN E.grade < 40 THEN 1 END) AS D
 FROM Students S
 JOIN Exams E ON S.uun = E.student
@@ -238,4 +246,10 @@ HAVING COUNT(DISTINCT E.course) = (
     SELECT COUNT(*)
     FROM Programmes P2 
     WHERE P2.degree = P.degree
+)
+UNION
+SELECT S.uun, S.name 
+FROM Students S 
+WHERE S.degree NOT IN (
+    SELECT P.degree FROM Programmes P
 );
