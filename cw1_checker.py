@@ -2,9 +2,6 @@ forbidden = open("forbidden.txt", "r")
 forbidden_list = forbidden.readlines()
 forbidden_list = [x.replace('\n','') for x in forbidden_list]
 forbidden_list = [x.lower() for x in forbidden_list]
-# print(forbidden_list)
-
-forbidden_words = []
 
 filenames = ["01.sql",
     "02.sql",
@@ -16,6 +13,8 @@ filenames = ["01.sql",
     "08.sql",
     "09.sql",
     "10.sql"]
+
+forbidden_words = []
 
 for fn in filenames: 
     print('Checking ' + fn + '...')
@@ -32,8 +31,6 @@ for fn in filenames:
         for word in line.split(' '):
             if word != '':
                 tokens.append(word)
-# print(list(set(tokens)))
-
 
     for word in forbidden_list:
         if word in tokens:
