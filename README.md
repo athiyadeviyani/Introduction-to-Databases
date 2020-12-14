@@ -1,2 +1,3 @@
 # Introduction-to-Databases
-SQL data for CW1: https://github.com/JorVLP/idb-sql-data
+<b>SQL data for CW1:</b> https://github.com/JorVLP/idb-sql-data
+<br><b>Coursework 1 Marks:</b> 100%
